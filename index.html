@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>☀️ Sunny 16 Rule Calculator</title>
+    <title>☀️ Advanced Sunny 16 Calculator</title>
     <style>
         :root {
             --primary: #4a6fa5;
@@ -134,11 +134,17 @@
             font-size: 14px;
             display: none;
         }
+        
+        .input-hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
     <div class="calculator">
-        <h1>☀️ Sunny 16 Rule Calculator</h1>
+        <h1>☀️ Advanced Sunny 16 Calculator</h1>
         
         <div class="form-group">
             <label for="iso">📷 Film ISO</label>
@@ -149,18 +155,47 @@
         <div class="form-group">
             <label for="aperture">⭕ Aperture (f-stop)</label>
             <select id="aperture">
+                <option value="">Calculate for me</option>
                 <option value="1">f/1</option>
                 <option value="1.4">f/1.4</option>
                 <option value="2">f/2</option>
                 <option value="2.8">f/2.8</option>
                 <option value="4">f/4</option>
                 <option value="5.6">f/5.6</option>
-                <option value="8">f/8</option>
+                <option value="8" selected>f/8</option>
                 <option value="11">f/11</option>
-                <option value="16" selected>f/16</option>
+                <option value="16">f/16</option>
                 <option value="22">f/22</option>
                 <option value="32">f/32</option>
             </select>
+            <div class="input-hint">Leave blank to calculate aperture</div>
+        </div>
+        
+        <div class="form-group">
+            <label for="shutter">⏱️ Shutter Speed</label>
+            <select id="shutter">
+                <option value="">Calculate for me</option>
+                <option value="1">1s</option>
+                <option value="0.5">1/2s</option>
+                <option value="0.25">1/4s</option>
+                <option value="0.125">1/8s</option>
+                <option value="0.0625">1/16s</option>
+                <option value="0.03125">1/32s</option>
+                <option value="0.015625">1/64s</option>
+                <option value="0.0078125">1/128s</option>
+                <option value="0.00390625">1/256s</option>
+                <option value="0.001953125">1/512s</option>
+                <option value="0.0009765625">1/1024s</option>
+                <option value="0.004">1/250s</option>
+                <option value="0.002">1/500s</option>
+                <option value="0.001">1/1000s</option>
+                <option value="0.0005">1/2000s</option>
+                <option value="0.011111111" selected>1/90s</option>
+                <option value="0.008333333">1/120s</option>
+                <option value="0.016666667">1/60s</option>
+                <option value="0.033333333">1/30s</option>
+            </select>
+            <div class="input-hint">Leave blank to calculate shutter speed</div>
         </div>
         
         <div class="form-group">
@@ -168,7 +203,7 @@
             <select id="lighting">
                 <option value="16">☀️ Bright Sun (f/16)</option>
                 <option value="11">🌤️ Hazy Sun (f/11)</option>
-                <option value="8">⛅ Cloudy Bright (f/8)</option>
+                <option value="8" selected>⛅ Cloudy Bright (f/8)</option>
                 <option value="5.6">☁️ Overcast (f/5.6)</option>
                 <option value="4">🌳 Heavy Shade (f/4)</option>
                 <option value="2.8">🌅 Sunset/Sunrise (f/2.8)</option>
@@ -179,10 +214,10 @@
         
         <div class="result" id="result">
             <h3>⚡ Recommended Exposure</h3>
-            <div class="exposure-value" id="shutter-speed"></div>
+            <div class="exposure-value" id="calculated-value"></div>
             <div class="settings">
                 <div class="setting" id="iso-setting"></div>
-                <div class="setting" id="aperture-setting"></div>
+                <div class="setting" id="variable-setting"></div>
                 <div class="setting" id="lighting-setting"></div>
             </div>
         </div>
@@ -194,39 +229,60 @@
             const isoInput = document.getElementById('iso');
             const isoError = document.getElementById('iso-error');
             const resultDiv = document.getElementById('result');
+            const apertureSelect = document.getElementById('aperture');
+            const shutterSelect = document.getElementById('shutter');
             
             calculateBtn.addEventListener('click', function() {
                 // Reset error state
                 isoError.style.display = 'none';
+                resultDiv.style.display = 'none';
                 
                 // Get and validate ISO
                 const iso = parseInt(isoInput.value);
                 if (isNaN(iso) || iso < 25 || iso > 6400) {
                     isoError.style.display = 'block';
-                    resultDiv.style.display = 'none';
                     return;
                 }
                 
-                // Get other values
-                const aperture = parseFloat(document.getElementById('aperture').value);
+                // Get lighting condition
                 const lightingFStop = parseFloat(document.getElementById('lighting').value);
                 
-                // Calculate shutter speed using Sunny 16 rule
-                const shutterSpeedSeconds = (1/iso) * Math.pow(aperture, 2) / Math.pow(lightingFStop, 2);
+                // Determine what to calculate
+                const apertureValue = apertureSelect.value;
+                const shutterValue = shutterSelect.value;
                 
-                // Format the shutter speed
-                let displaySpeed;
-                if (shutterSpeedSeconds >= 1) {
-                    displaySpeed = shutterSpeedSeconds.toFixed(1) + 's';
+                if (apertureValue === "" && shutterValue === "") {
+                    alert("Please leave either aperture or shutter speed blank to calculate");
+                    return;
+                }
+                
+                if (apertureValue !== "" && shutterValue !== "") {
+                    alert("Please leave one value blank to calculate (either aperture or shutter speed)");
+                    return;
+                }
+                
+                let calculatedValue, variableName, variableValue;
+                
+                if (apertureValue === "") {
+                    // Calculate aperture
+                    const shutterSpeed = parseFloat(shutterValue);
+                    const aperture = Math.sqrt((shutterSpeed * iso * Math.pow(lightingFStop, 2)));
+                    calculatedValue = "f/" + nearestFStop(aperture);
+                    variableName = "⏱️ Shutter Speed";
+                    variableValue = formatShutterSpeed(shutterSpeed);
                 } else {
-                    const fraction = Math.round(1 / shutterSpeedSeconds);
-                    displaySpeed = '1/' + fraction + 's';
+                    // Calculate shutter speed
+                    const aperture = parseFloat(apertureValue);
+                    const shutterSpeedSeconds = (1/iso) * Math.pow(aperture, 2) / Math.pow(lightingFStop, 2);
+                    calculatedValue = formatShutterSpeed(shutterSpeedSeconds);
+                    variableName = "⭕ Aperture";
+                    variableValue = "f/" + aperture;
                 }
                 
                 // Update the UI
-                document.getElementById('shutter-speed').textContent = displaySpeed;
+                document.getElementById('calculated-value').textContent = calculatedValue;
                 document.getElementById('iso-setting').textContent = `📷 ISO ${iso}`;
-                document.getElementById('aperture-setting').textContent = `⭕ f/${aperture}`;
+                document.getElementById('variable-setting').textContent = `${variableName}: ${variableValue}`;
                 
                 // Set lighting description
                 const lightingSelect = document.getElementById('lighting');
@@ -236,6 +292,33 @@
                 // Show result
                 resultDiv.style.display = 'block';
             });
+            
+            // Helper function to find nearest standard f-stop
+            function nearestFStop(value) {
+                const fStops = [1, 1.4, 2, 2.8, 4, 5.6, 8, 11, 16, 22, 32];
+                let closest = fStops[0];
+                let minDiff = Math.abs(value - fStops[0]);
+                
+                for (let i = 1; i < fStops.length; i++) {
+                    const diff = Math.abs(value - fStops[i]);
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closest = fStops[i];
+                    }
+                }
+                
+                return closest;
+            }
+            
+            // Helper function to format shutter speed
+            function formatShutterSpeed(seconds) {
+                if (seconds >= 1) {
+                    return seconds.toFixed(1) + 's';
+                } else {
+                    const fraction = Math.round(1 / seconds);
+                    return '1/' + fraction + 's';
+                }
+            }
             
             // Also calculate when pressing Enter in ISO field
             isoInput.addEventListener('keypress', function(e) {
