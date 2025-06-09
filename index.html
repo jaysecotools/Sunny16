@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>☀️ Sunny 16 Rule Calculator</title>
+    <style>
+        :root {
+            --primary: #4a6fa5;
+            --secondary: #166088;
+            --accent: #4fc3f7;
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --text: #333333;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .calculator {
+            background-color: var(--card);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 100%;
+            max-width: 500px;
+            transition: transform 0.3s ease;
+        }
+        
+        .calculator:hover {
+            transform: translateY(-5px);
+        }
+        
+        h1 {
+            color: var(--secondary);
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--secondary);
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        button:hover {
+            background-color: var(--secondary);
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: rgba(79, 195, 247, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+            display: none;
+        }
+        
+        .result h3 {
+            margin-top: 0;
+            color: var(--secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .exposure-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 10px 0;
+        }
+        
+        .settings {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .setting {
+            background-color: rgba(22, 96, 136, 0.1);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 600px) {
+            .calculator {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h1>☀️ Sunny 16 Rule Calculator</h1>
+        
+        <div class="form-group">
+            <label for="iso">📷 Film ISO</label>
+            <input type="number" id="iso" min="25" max="6400" step="25" value="100" placeholder="Enter film ISO">
+        </div>
+        
+        <div class="form-group">
+            <label for="aperture">⭕ Aperture (f-stop)</label>
+            <select id="aperture">
+                <option value="1">f/1</option>
+                <option value="1.4">f/1.4</option>
+                <option value="2">f/2</option>
+                <option value="2.8">f/2.8</option>
+                <option value="4">f/4</option>
+                <option value="5.6">f/5.6</option>
+                <option value="8">f/8</option>
+                <option value="11">f/11</option>
+                <option value="16" selected>f/16</option>
+                <option value="22">f/22</option>
+                <option value="32">f/32</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="lighting">🌤️ Lighting Conditions</label>
+            <select id="lighting">
+                <option value="bright_sun">☀️ Bright Sun (Detailed shadows)</option>
+                <option value="hazy_sun">🌤️ Hazy Sun (Soft shadows)</option>
+                <option value="cloudy_bright">⛅ Cloudy Bright (No shadows)</option>
+                <option value="cloudy">☁️ Overcast (Dark gray sky)</option>
+                <option value="shade">🌳 Heavy Shade (No sky visible)</option>
+                <option value="sunset">🌅 Sunset/Sunrise</option>
+            </select>
+        </div>
+        
+        <button id="calculate">📊 Calculate Exposure</button>
+        
+        <div class="result" id="result">
+            <h3>⚡ Recommended Exposure</h3>
+            <div class="exposure-value" id="shutter-speed"></div>
+            <div class="settings">
+                <div class="setting" id="iso-setting"></div>
+                <div class="setting" id="aperture-setting"></div>
+                <div class="setting" id="lighting-setting"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('calculate').addEventListener('click', function() {
+            // Get input values
+            const iso = parseInt(document.getElementById('iso').value);
+            const aperture = parseFloat(document.getElementById('aperture').value);
+            const lighting = document.getElementById('lighting').value;
+            
+            // Validate ISO
+            if (isNaN(iso) {
+                alert('Please enter a valid ISO value');
+                return;
+            }
+            
+            // Calculate base shutter speed (Sunny 16 rule: 1/ISO at f/16)
+            let baseShutterSpeed = 1 / iso;
+            
+            // Adjust for aperture (from f/16)
+            const apertureAdjustment = Math.pow(Math.sqrt(2), Math.log2(Math.pow(aperture / 16, 2)));
+            let shutterSpeed = baseShutterSpeed * apertureAdjustment;
+            
+            // Adjust for lighting conditions
+            switch(lighting) {
+                case 'bright_sun': // f/16
+                    // No adjustment needed (base case)
+                    break;
+                case 'hazy_sun': // f/11
+                    shutterSpeed *= 2;
+                    break;
+                case 'cloudy_bright': // f/8
+                    shutterSpeed *= 4;
+                    break;
+                case 'cloudy': // f/5.6
+                    shutterSpeed *= 8;
+                    break;
+                case 'shade': // f/4
+                    shutterSpeed *= 16;
+                    break;
+                case 'sunset': // f/2.8
+                    shutterSpeed *= 32;
+                    break;
+            }
+            
+            // Format shutter speed for display
+            let displaySpeed;
+            if (shutterSpeed >= 1) {
+                displaySpeed = shutterSpeed.toFixed(1) + 's';
+            } else if (shutterSpeed >= 0.5) {
+                displaySpeed = '1/2s';
+            } else {
+                const fraction = Math.round(1 / shutterSpeed);
+                displaySpeed = `1/${fraction}s`;
+            }
+            
+            // Update result display
+            document.getElementById('shutter-speed').textContent = displaySpeed;
+            document.getElementById('iso-setting').textContent = `📷 ISO ${iso}`;
+            document.getElementById('aperture-setting').textContent = `⭕ f/${aperture}`;
+            
+            // Set lighting description
+            let lightingText = '';
+            switch(lighting) {
+                case 'bright_sun': lightingText = '☀️ Bright Sun'; break;
+                case 'hazy_sun': lightingText = '🌤️ Hazy Sun'; break;
+                case 'cloudy_bright': lightingText = '⛅ Cloudy Bright'; break;
+                case 'cloudy': lightingText = '☁️ Overcast'; break;
+                case 'shade': lightingText = '🌳 Heavy Shade'; break;
+                case 'sunset': lightingText = '🌅 Sunset/Sunrise'; break;
+            }
+            document.getElementById('lighting-setting').textContent = lightingText;
+            
+            // Show result
+            document.getElementById('result').style.display = 'block';
+        });
+    </script>
+</body>
+</html>
