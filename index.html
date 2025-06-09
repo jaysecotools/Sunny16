@@ -178,7 +178,7 @@
             </select>
         </div>
         
-        <button id="calculate">📊 Calculate Exposure</button>
+        <button onclick="calculateExposure()">📊 Calculate Exposure</button>
         
         <div class="result" id="result">
             <h3>⚡ Recommended Exposure</h3>
@@ -192,7 +192,7 @@
     </div>
 
     <script>
-        document.getElementById('calculate').addEventListener('click', function() {
+        function calculateExposure() {
             // Get input values
             const iso = parseInt(document.getElementById('iso').value);
             const aperture = parseFloat(document.getElementById('aperture').value);
@@ -208,7 +208,7 @@
             let baseShutterSpeed = 1 / iso;
             
             // Adjust for aperture (from f/16)
-            const apertureAdjustment = Math.pow(Math.sqrt(2), Math.log2(Math.pow(aperture / 16, 2)));
+            const apertureAdjustment = Math.pow(aperture/16, 2);
             let shutterSpeed = baseShutterSpeed * apertureAdjustment;
             
             // Adjust for lighting conditions
@@ -263,7 +263,7 @@
             
             // Show result
             document.getElementById('result').style.display = 'block';
-        });
+        }
     </script>
 </body>
 </html>
