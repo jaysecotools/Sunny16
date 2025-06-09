@@ -34,11 +34,6 @@
             padding: 30px;
             width: 100%;
             max-width: 500px;
-            transition: transform 0.3s ease;
-        }
-        
-        .calculator:hover {
-            transform: translateY(-5px);
         }
         
         h1 {
@@ -133,10 +128,11 @@
             font-size: 14px;
         }
         
-        @media (max-width: 600px) {
-            .calculator {
-                padding: 20px;
-            }
+        .error {
+            color: #d32f2f;
+            margin-top: 5px;
+            font-size: 14px;
+            display: none;
         }
     </style>
 </head>
@@ -146,7 +142,8 @@
         
         <div class="form-group">
             <label for="iso">📷 Film ISO</label>
-            <input type="number" id="iso" min="25" max="6400" step="25" value="100" placeholder="Enter film ISO">
+            <input type="number" id="iso" min="25" max="6400" step="25" value="100" placeholder="Enter film ISO (100, 200, 400...)">
+            <div class="error" id="iso-error">Please enter a valid ISO (25-6400)</div>
         </div>
         
         <div class="form-group">
@@ -169,16 +166,16 @@
         <div class="form-group">
             <label for="lighting">🌤️ Lighting Conditions</label>
             <select id="lighting">
-                <option value="bright_sun">☀️ Bright Sun (Detailed shadows)</option>
-                <option value="hazy_sun">🌤️ Hazy Sun (Soft shadows)</option>
-                <option value="cloudy_bright">⛅ Cloudy Bright (No shadows)</option>
-                <option value="cloudy">☁️ Overcast (Dark gray sky)</option>
-                <option value="shade">🌳 Heavy Shade (No sky visible)</option>
-                <option value="sunset">🌅 Sunset/Sunrise</option>
+                <option value="16">☀️ Bright Sun (f/16)</option>
+                <option value="11">🌤️ Hazy Sun (f/11)</option>
+                <option value="8">⛅ Cloudy Bright (f/8)</option>
+                <option value="5.6">☁️ Overcast (f/5.6)</option>
+                <option value="4">🌳 Heavy Shade (f/4)</option>
+                <option value="2.8">🌅 Sunset/Sunrise (f/2.8)</option>
             </select>
         </div>
         
-        <button onclick="calculateExposure()">📊 Calculate Exposure</button>
+        <button id="calculate-btn">📊 Calculate Exposure</button>
         
         <div class="result" id="result">
             <h3>⚡ Recommended Exposure</h3>
@@ -192,78 +189,61 @@
     </div>
 
     <script>
-        function calculateExposure() {
-            // Get input values
-            const iso = parseInt(document.getElementById('iso').value);
-            const aperture = parseFloat(document.getElementById('aperture').value);
-            const lighting = document.getElementById('lighting').value;
+        document.addEventListener('DOMContentLoaded', function() {
+            const calculateBtn = document.getElementById('calculate-btn');
+            const isoInput = document.getElementById('iso');
+            const isoError = document.getElementById('iso-error');
+            const resultDiv = document.getElementById('result');
             
-            // Validate ISO
-            if (isNaN(iso) {
-                alert('Please enter a valid ISO value');
-                return;
-            }
+            calculateBtn.addEventListener('click', function() {
+                // Reset error state
+                isoError.style.display = 'none';
+                
+                // Get and validate ISO
+                const iso = parseInt(isoInput.value);
+                if (isNaN(iso) || iso < 25 || iso > 6400) {
+                    isoError.style.display = 'block';
+                    resultDiv.style.display = 'none';
+                    return;
+                }
+                
+                // Get other values
+                const aperture = parseFloat(document.getElementById('aperture').value);
+                const lightingFStop = parseFloat(document.getElementById('lighting').value);
+                
+                // Calculate shutter speed using Sunny 16 rule
+                const shutterSpeedSeconds = (1/iso) * Math.pow(aperture, 2) / Math.pow(lightingFStop, 2);
+                
+                // Format the shutter speed
+                let displaySpeed;
+                if (shutterSpeedSeconds >= 1) {
+                    displaySpeed = shutterSpeedSeconds.toFixed(1) + 's';
+                } else {
+                    const fraction = Math.round(1 / shutterSpeedSeconds);
+                    displaySpeed = '1/' + fraction + 's';
+                }
+                
+                // Update the UI
+                document.getElementById('shutter-speed').textContent = displaySpeed;
+                document.getElementById('iso-setting').textContent = `📷 ISO ${iso}`;
+                document.getElementById('aperture-setting').textContent = `⭕ f/${aperture}`;
+                
+                // Set lighting description
+                const lightingSelect = document.getElementById('lighting');
+                const lightingText = lightingSelect.options[lightingSelect.selectedIndex].text.split('(')[0].trim();
+                document.getElementById('lighting-setting').textContent = lightingText;
+                
+                // Show result
+                resultDiv.style.display = 'block';
+            });
             
-            // Calculate base shutter speed (Sunny 16 rule: 1/ISO at f/16)
-            let baseShutterSpeed = 1 / iso;
-            
-            // Adjust for aperture (from f/16)
-            const apertureAdjustment = Math.pow(aperture/16, 2);
-            let shutterSpeed = baseShutterSpeed * apertureAdjustment;
-            
-            // Adjust for lighting conditions
-            switch(lighting) {
-                case 'bright_sun': // f/16
-                    // No adjustment needed (base case)
-                    break;
-                case 'hazy_sun': // f/11
-                    shutterSpeed *= 2;
-                    break;
-                case 'cloudy_bright': // f/8
-                    shutterSpeed *= 4;
-                    break;
-                case 'cloudy': // f/5.6
-                    shutterSpeed *= 8;
-                    break;
-                case 'shade': // f/4
-                    shutterSpeed *= 16;
-                    break;
-                case 'sunset': // f/2.8
-                    shutterSpeed *= 32;
-                    break;
-            }
-            
-            // Format shutter speed for display
-            let displaySpeed;
-            if (shutterSpeed >= 1) {
-                displaySpeed = shutterSpeed.toFixed(1) + 's';
-            } else if (shutterSpeed >= 0.5) {
-                displaySpeed = '1/2s';
-            } else {
-                const fraction = Math.round(1 / shutterSpeed);
-                displaySpeed = `1/${fraction}s`;
-            }
-            
-            // Update result display
-            document.getElementById('shutter-speed').textContent = displaySpeed;
-            document.getElementById('iso-setting').textContent = `📷 ISO ${iso}`;
-            document.getElementById('aperture-setting').textContent = `⭕ f/${aperture}`;
-            
-            // Set lighting description
-            let lightingText = '';
-            switch(lighting) {
-                case 'bright_sun': lightingText = '☀️ Bright Sun'; break;
-                case 'hazy_sun': lightingText = '🌤️ Hazy Sun'; break;
-                case 'cloudy_bright': lightingText = '⛅ Cloudy Bright'; break;
-                case 'cloudy': lightingText = '☁️ Overcast'; break;
-                case 'shade': lightingText = '🌳 Heavy Shade'; break;
-                case 'sunset': lightingText = '🌅 Sunset/Sunrise'; break;
-            }
-            document.getElementById('lighting-setting').textContent = lightingText;
-            
-            // Show result
-            document.getElementById('result').style.display = 'block';
-        }
+            // Also calculate when pressing Enter in ISO field
+            isoInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    calculateBtn.click();
+                }
+            });
+        });
     </script>
 </body>
 </html>
